@@ -1,545 +1,67 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedRPG: Grimório Clínico</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MedRPG · Grimório Clínico</title>
+  <meta name="description" content="Transforme suas horas de estudo de medicina em batalhas contra o Esquecimento.">
+  <meta name="theme-color" content="#07080d">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <canvas id="fx-bg" aria-hidden="true"></canvas>
 
-<canvas id="fx-canvas"></canvas>
-
-<!-- MODAL DE VICTORY & LOOT -->
-<div id="victory-loot-modal" class="modal-backdrop">
-    <div class="modal-card loot-drop-card">
-        <h1 class="loot-drop-title">✦ BOSS DEFEATED! ✦</h1>
-        <p class="loot-boss-sub" id="loot-boss-name">O DEVORADOR DE ERAS</p>
-        
-        <div class="loot-revealed-box">
-            <img id="loot-item-img" class="loot-img-glow" src="" alt="Loot Item">
-            <h2 id="loot-item-name">Bisturi do Anatomista</h2>
-            <div id="loot-item-rarity">[RARO] • Arma</div>
-            <div class="loot-stats-row" id="loot-item-stats"></div>
-            <p class="loot-effect-text" id="loot-item-effect"></p>
-            <p class="loot-origin-text" id="loot-item-origin"></p>
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark" id="brand-mark"></span>
+        <div>
+          <div class="brand-name">MedRPG</div>
+          <div class="brand-sub">Grimório Clínico</div>
         </div>
+      </div>
+      <nav class="nav" id="nav"></nav>
+      <div class="sidebar-foot" id="sidebar-foot"></div>
+    </aside>
 
-        <div class="summary-actions">
-            <button class="btn-primary" id="btn-equip-loot"><i class="fa-solid fa-hand-holding-hand"></i> Equipar Agora</button>
-            <button class="btn-secondary" onclick="UI.closeVictoryLootModal()"><i class="fa-solid fa-box-archive"></i> Guardar na Mochila</button>
-        </div>
-    </div>
-</div>
+    <main class="main">
+      <header class="hud" id="hud"></header>
+      <section class="view" id="view" tabindex="-1"></section>
+    </main>
+  </div>
 
-<!-- MODAL DE INSPEÇÃO & COMPARAÇÃO DE ITEM -->
-<div id="item-inspect-modal" class="modal-backdrop">
-    <div class="modal-card">
-        <div class="modal-header">
-            <h3 id="inspect-item-name">Nome do Item</h3>
-            <button class="btn-close-modal" onclick="CharacterHub.closeInspectModal()">&times;</button>
-        </div>
-        <div class="inspect-body">
-            <div style="text-align: center; margin: 6px 0;">
-                <img id="inspect-item-img" src="" width="60" height="60" alt="Item">
-                <div id="inspect-item-type" style="font-weight:bold; font-size:0.85rem; margin-top:4px;"></div>
-            </div>
-            
-            <p id="inspect-item-desc" style="font-size:0.85rem; color:#fff; margin: 8px 0;"></p>
-            <p id="inspect-item-origin" style="font-size:0.75rem; color:var(--text-muted); font-style:italic; margin-bottom:10px;"></p>
+  <!-- Tela de batalha (foco) -->
+  <div class="focus" id="focus" aria-hidden="true"></div>
 
-            <!-- COMPARAÇÃO COM EQUIPAMENTO ATUAL -->
-            <div class="comparison-card" id="inspect-comparison-box">
-                <div class="comp-col">
-                    <span class="comp-title">EQUIPADO ATUAL</span>
-                    <strong id="comp-current-name" style="color:var(--text-muted);">Nenhum</strong>
-                    <div id="comp-current-stats" class="comp-stats-list"></div>
-                </div>
-                <div class="comp-divider"><i class="fa-solid fa-arrow-right"></i></div>
-                <div class="comp-col">
-                    <span class="comp-title">NOVO ITEM</span>
-                    <strong id="comp-new-name" style="color:var(--gold);">Item</strong>
-                    <div id="comp-new-stats" class="comp-stats-list"></div>
-                </div>
-            </div>
-            <div id="comp-diff-summary" class="comp-diff-box"></div>
-        </div>
-        <div class="summary-actions" id="inspect-actions-box"></div>
-    </div>
-</div>
+  <!-- Camadas globais -->
+  <div class="modal-root" id="modal-root"></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <canvas id="fx-top" aria-hidden="true"></canvas>
 
-<!-- MODAL DE LEVEL UP -->
-<div id="levelup-modal" class="modal-backdrop">
-    <div class="modal-card levelup-card">
-        <h1 class="levelup-title">✦ LEVEL UP! ✦</h1>
-        <div class="levelup-badge" id="levelup-badge-text">NÍVEL 11 → NÍVEL 12</div>
-        <p class="levelup-sub" id="levelup-rank-text">Título Atual: Interno de Medicina</p>
-        <div class="levelup-bonus">+2 pontos permanentes em todos os atributos base!</div>
-        <button class="btn-launch-battle" onclick="UI.closeLevelUpModal()">Continuar Jornada</button>
-    </div>
-</div>
+  <noscript><p style="padding:2rem;color:#fff">O MedRPG precisa de JavaScript para funcionar.</p></noscript>
 
-<!-- MODAL DO CALENDÁRIO -->
-<div id="day-modal" class="modal-backdrop">
-    <div class="modal-card">
-        <div class="modal-header">
-            <h3 id="modal-day-title">22 de Agosto de 2026</h3>
-            <button class="btn-close-modal" onclick="UI.closeDayModal()">&times;</button>
-        </div>
-        <div class="modal-summary-grid">
-            <div>Tempo: <strong id="modal-day-time">0 min</strong></div>
-            <div>Dano: <strong id="modal-day-dmg" style="color: var(--crimson);">0 HP</strong></div>
-            <div>XP: <strong id="modal-day-xp" style="color: var(--mana);">0</strong></div>
-            <div>Sessões: <strong id="modal-day-sessions">0</strong></div>
-        </div>
-        <div class="modal-sessions-list" id="modal-sessions-container"></div>
-    </div>
-</div>
-
-<!-- TELA MINIMALISTA DE FOCO -->
-<div id="battle-overlay" class="battle-overlay">
-    <div class="focus-box">
-        <div class="focus-badge" id="focus-boss-tier">BOSS GLOBAL • COMBATE ATIVO</div>
-        <h1 class="focus-boss-name" id="focus-boss-name">THE ABYSS</h1>
-        <div class="focus-subject" id="focus-subject-display">Estudo Livre</div>
-
-        <div class="focus-traits-list" id="focus-traits-display"></div>
-
-        <div class="focus-hp-wrap">
-            <!-- PALCO DE COMBATE LADO A LADO -->
-        <div class="combat-stage-arena" id="combat-stage-arena">
-            <div class="stage-actor" id="char-actor-box">
-                <img id="arena-character-sprite" class="combat-sprite idle" src="https://api.iconify.design/game-icons/hood.svg?color=%23d4af37" alt="Acadêmico">
-                <span class="actor-tag">ACADÊMICO</span>
-            </div>
-
-            <div class="stage-versus">⚔️</div>
-
-            <div class="stage-actor" id="boss-actor-box">
-                <img id="arena-boss-sprite" class="combat-sprite idle" src="" alt="Boss">
-                <span class="actor-tag" id="arena-boss-tag">BOSS</span>
-            </div>
-
-            <div id="combat-banner-anchor"></div>
-        </div>
-            <div class="focus-hp-meta">
-                <span>VITALIDADE DO BOSS</span>
-                <span><span id="focus-hp-cur">50000</span> / <span id="focus-hp-max">50000</span> HP</span>
-            </div>
-            <div class="focus-hp-bar">
-                <div class="focus-hp-fill" id="focus-hp-fill"></div>
-            </div>
-        </div>
-
-        <div class="focus-clock" id="focus-clock">50:00</div>
-
-        <div class="focus-actions">
-            <button class="btn-abort" onclick="StudyTimer.abort()"><i class="fa-solid fa-flag"></i> Abortar</button>
-            <button class="btn-complete-early" onclick="StudyTimer.complete()"><i class="fa-solid fa-check"></i> Concluir Sessão</button>
-        </div>
-    </div>
-</div>
-
-<div class="rpg-app">
-    <!-- TOP HUD -->
-    <div class="hud-panel">
-        <div class="player-info">
-            <h2><img src="https://api.iconify.design/game-icons/caduceus.svg?color=%23d4af37" width="22" style="vertical-align: middle;"> <span id="p-title">Médico em Formação</span></h2>
-            <div class="player-sub">Nível <span id="p-lvl">1</span> • <span id="p-elo">Ciclo Clínico</span></div>
-        </div>
-
-        <div class="bar-group">
-            <div class="bar-meta">
-                <span style="color: #3498db;"><i class="fa-solid fa-brain"></i> XP Permanente</span>
-                <span id="xp-text">0 / 100 XP</span>
-            </div>
-            <div class="bar-bg">
-                <div class="bar-fill fill-xp" id="xp-bar" style="width: 0%;"></div>
-            </div>
-        </div>
-
-        <div class="bar-group">
-            <div class="bar-meta">
-                <span style="color: #2ecc71;"><i class="fa-solid fa-bolt"></i> Combo de Foco</span>
-                <span id="combo-text">x1.00 (1 Dia)</span>
-            </div>
-            <div class="bar-bg">
-                <div class="bar-fill fill-stamina" id="combo-bar" style="width: 20%;"></div>
-            </div>
-        </div>
-
-        <!-- BOTÃO DE BGM INTEGRADO -->
-        <div style="display: flex; align-items: center; justify-content: flex-end;">
-            <button class="btn-bgm-toggle" id="btn-bgm-toggle" onclick="AudioEngine.toggleBGM()">
-                <i class="fa-solid fa-volume-xmark"></i> BGM: OFF
-            </button>
-        </div>
-    </div>
-
-    <!-- NAVEGAÇÃO PRINCIPAL -->
-    <div class="nav-tabs">
-        <button class="nav-btn active" onclick="Tabs.open('home')"><i class="fa-solid fa-skull"></i> Batalha</button>
-        <button class="nav-btn" onclick="Tabs.open('character')"><i class="fa-solid fa-user-shield"></i> Personagem</button>
-        <button class="nav-btn" onclick="Tabs.open('calendar')"><i class="fa-regular fa-calendar-check"></i> Calendário</button>
-        <button class="nav-btn" onclick="Tabs.open('history')"><i class="fa-solid fa-clock-rotate-left"></i> Histórico</button>
-        <button class="nav-btn" onclick="Tabs.open('stats')"><i class="fa-solid fa-chart-pie"></i> Estatísticas</button>
-        <button class="nav-btn" onclick="Tabs.open('config')"><i class="fa-solid fa-sliders"></i> Ajustes</button>
-    </div>
-
-    <!-- ABA 1: BATALHA / HOME -->
-    <div id="tab-home" class="tab-panel active">
-        <!-- CARD DO BOSS NARRATIVO PROCEDURAL -->
-        <div class="boss-card" id="boss-main-card">
-            <div class="boss-header-meta">
-                <span class="boss-rarity-badge" id="boss-rarity-label">COMUM</span>
-                <span class="boss-level-badge" id="boss-level-label">Lv. 1</span>
-            </div>
-            <h1 class="boss-name" id="boss-name">O DEVORADOR DE ERAS</h1>
-            
-            <div class="boss-traits-container" id="boss-traits-list"></div>
-
-            <div class="boss-stage">
-                <img id="boss-img" class="boss-img" src="" alt="Boss Sprite">
-                <div id="damage-anchor"></div>
-            </div>
-
-            <div class="boss-hp-wrapper">
-                <div class="boss-hp-meta">
-                    <span style="color: var(--crimson);"><i class="fa-solid fa-heart-pulse"></i> Vitalidade do Guardião</span>
-                    <span><span id="boss-hp-cur">12000</span> / <span id="boss-hp-max">12000</span> HP</span>
-                </div>
-                <div class="boss-hp-bg">
-                    <div class="boss-hp-fill" id="boss-hp-fill"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- LAUNCHER DE BATALHA COM SELETOR DE MODO -->
-        <div class="launcher-card">
-            <div class="launcher-inputs">
-                <div class="field-box">
-                    <label><i class="fa-solid fa-book-bookmark"></i> O que você vai estudar? (Opcional - Matéria livre)</label>
-                    <input type="text" id="input-subject" placeholder="Ex: Cardiologia - ECG, Farmacologia, Anatomia...">
-                </div>
-
-                <div class="field-row">
-                    <div class="field-box">
-                        <label><i class="fa-solid fa-wand-magic-sparkles"></i> Método de Estudo</label>
-                        <select id="select-method">
-                            <option value="passive_reading">Leitura Passiva (500 HP/h • 100 XP/h)</option>
-                            <option value="flashcards">Flashcards (1.000 HP/h • 120 XP/h)</option>
-                            <option value="questions" selected>Resolução de Questões (1.500 HP/h • 130 XP/h)</option>
-                            <option value="active_combo">Combo Ativo / Explicação (2.000 HP/h • 150 XP/h)</option>
-                            <option value="mock_exam">Simulado de Alta Carga (2.500 HP/h • 200 XP/h)</option>
-                        </select>
-                    </div>
-
-                    <div class="field-box">
-                        <label><i class="fa-regular fa-clock"></i> Modo do Relógio</label>
-                        <div class="mode-toggle-group">
-                            <button class="mode-toggle-btn active" onclick="StudyTimer.setMode('countdown', this)"><i class="fa-solid fa-hourglass-half"></i> Meta Fixa</button>
-                            <button class="mode-toggle-btn" onclick="StudyTimer.setMode('stopwatch', this)"><i class="fa-solid fa-stopwatch"></i> Livre</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="field-box" id="preset-duration-box" style="margin-top: 4px;">
-                    <label><i class="fa-solid fa-stopwatch-20"></i> Duração Planejada (Modo Meta Fixa)</label>
-                    <div class="preset-group" id="preset-duration-group">
-                        <button class="preset-btn" onclick="StudyTimer.setPreset(25, this)">25 min</button>
-                        <button class="preset-btn active" onclick="StudyTimer.setPreset(50, this)">50 min (Crítico)</button>
-                        <button class="preset-btn" onclick="StudyTimer.setPreset(90, this)">90 min (Raid)</button>
-                    </div>
-                </div>
-            </div>
-
-            <button class="btn-launch-battle" onclick="StudyTimer.start()">
-                <i class="fa-solid fa-gavel"></i> INICIAR BATALHA
-            </button>
-        </div>
-
-        <!-- DASHBOARD GRID -->
-        <div class="dashboard-grid">
-            <div class="dash-card">
-                <h3><i class="fa-solid fa-fire"></i> ESTUDO DE HOJE</h3>
-                <div class="stats-mini-grid">
-                    <div class="mini-stat">
-                        <span>Tempo Líquido</span>
-                        <strong id="dash-today-time">0 min</strong>
-                    </div>
-                    <div class="mini-stat">
-                        <span>Dano Desferido</span>
-                        <strong id="dash-today-dmg" style="color: var(--crimson);">0 HP</strong>
-                    </div>
-                    <div class="mini-stat">
-                        <span>XP Permanente</span>
-                        <strong id="dash-today-xp" style="color: var(--mana);">0</strong>
-                    </div>
-                    <div class="mini-stat">
-                        <span>Sessões</span>
-                        <strong id="dash-today-count">0</strong>
-                    </div>
-                </div>
-            </div>
-
-            <div class="dash-card">
-                <h3><i class="fa-solid fa-list-check"></i> ÚLTIMAS SESSÕES</h3>
-                <div class="recent-sessions-list" id="recent-sessions-container"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ABA 2: HUB DO PERSONAGEM -->
-    <div id="tab-character" class="tab-panel">
-        <div class="character-hub-container">
-            <!-- SUB-NAVEGAÇÃO DO PERSONAGEM -->
-            <div class="char-sub-tabs">
-                <button class="char-sub-btn active" onclick="CharacterHub.openSubTab('overview')"><i class="fa-solid fa-address-card"></i> Visão Geral</button>
-                <button class="char-sub-btn" onclick="CharacterHub.openSubTab('equipment')"><i class="fa-solid fa-shield-halved"></i> Equipamento</button>
-                <button class="char-sub-btn" onclick="CharacterHub.openSubTab('inventory')"><i class="fa-solid fa-box-open"></i> Inventário</button>
-                <button class="char-sub-btn" onclick="CharacterHub.openSubTab('collection')"><i class="fa-solid fa-trophy"></i> Coleção & Conquistas</button>
-            </div>
-
-            <!-- SUB-ABA 1: VISÃO GERAL -->
-            <div id="char-sub-overview" class="char-sub-panel active">
-                <div class="overview-grid">
-                    <div class="char-identity-card">
-                        <div class="char-id-header">
-                            <div>
-                                <span class="char-sheet-tag">FICHA DO PERSONAGEM</span>
-                                <h1 id="char-overview-title" style="font-family:'Cinzel'; color:var(--gold);">MÉDICO EM FORMAÇÃO</h1>
-                                <div class="char-elo-badge" id="char-overview-elo">Ciclo Clínico</div>
-                            </div>
-                            <div class="char-lvl-badge-big">NÍVEL <span id="char-overview-lvl">1</span></div>
-                        </div>
-
-                        <div class="char-xp-wrap" style="margin: 14px 0;">
-                            <div class="char-xp-meta">
-                                <span id="char-overview-xp-detail">0 / 100 XP</span>
-                                <span id="char-overview-xp-left">Faltam 100 XP</span>
-                            </div>
-                            <div class="char-xp-bg">
-                                <div class="char-xp-fill" id="char-overview-xp-fill"></div>
-                            </div>
-                        </div>
-
-                        <div class="char-highlights-grid">
-                            <div class="highlight-box">
-                                <span class="hl-num" id="char-hl-bosses">0</span>
-                                <span class="hl-label">Bosses Derrotados</span>
-                            </div>
-                            <div class="highlight-box">
-                                <span class="hl-num" id="char-hl-hours">0h</span>
-                                <span class="hl-label">Tempo Estudado</span>
-                            </div>
-                            <div class="highlight-box">
-                                <span class="hl-num" id="char-hl-streak">1d</span>
-                                <span class="hl-label">Sequência de Foco</span>
-                            </div>
-                            <div class="highlight-box">
-                                <span class="hl-num" id="char-hl-loot">3</span>
-                                <span class="hl-label">Itens no Arsenal</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ATRIBUTOS DETALHADOS COM BARRAS -->
-                    <div class="attributes-detailed-card">
-                        <h3><i class="fa-solid fa-chart-simple"></i> ATRIBUTOS PERMANENTES</h3>
-                        <p class="attr-subtext">Soma dos Atributos Base do Estudante + Bônus dos Equipamentos Ativos.</p>
-                        <div class="attributes-bars-container" id="attributes-bars-list"></div>
-                    </div>
-
-                    <!-- HISTÓRICO DA JORNADA -->
-                    <div class="journey-history-card">
-                        <h3><i class="fa-solid fa-scroll"></i> HISTÓRICO DA JORNADA</h3>
-                        <div class="journey-stats-grid">
-                            <div class="j-stat"><span>Dano Total ao Esquecimento:</span> <strong id="j-dmg" style="color:var(--crimson);">0 HP</strong></div>
-                            <div class="j-stat"><span>Maior Dano em Uma Sessão:</span> <strong id="j-max-dmg" style="color:var(--gold);">0 HP</strong></div>
-                            <div class="j-stat"><span>Total de Batalhas Realizadas:</span> <strong id="j-sessions">0</strong></div>
-                            <div class="j-stat"><span>XP Total Acumulado:</span> <strong id="j-xp" style="color:var(--mana);">0</strong></div>
-                            <div class="j-stat"><span>Equipamentos Lendários:</span> <strong id="j-legendary-count" style="color:var(--gold);">0</strong></div>
-                            <div class="j-stat"><span>Média de Tempo por Sessão:</span> <strong id="j-avg-time">0 min</strong></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SUB-ABA 2: EQUIPAMENTO (7 SLOTS AO REDOR DO AVATAR) -->
-            <div id="char-sub-equipment" class="char-sub-panel">
-                <div class="equipment-paperdoll-layout">
-                    <div class="slots-column left-slots">
-                        <div class="slot-frame" id="slot-weapon" onclick="CharacterHub.clickSlot('weapon')"></div>
-                        <div class="slot-frame" id="slot-grimoire" onclick="CharacterHub.clickSlot('grimoire')"></div>
-                        <div class="slot-frame" id="slot-armor" onclick="CharacterHub.clickSlot('armor')"></div>
-                    </div>
-
-                    <div class="character-center-avatar">
-                        <div class="avatar-aura" id="avatar-aura-glow"></div>
-                        <img id="avatar-portrait-img" src="https://api.iconify.design/game-icons/hood.svg?color=%23d4af37" alt="Character Portrait">
-                        <div class="avatar-title-pill" id="avatar-rank-pill">Estudante de Medicina</div>
-                    </div>
-
-                    <div class="slots-column right-slots">
-                        <div class="slot-frame" id="slot-relic" onclick="CharacterHub.clickSlot('relic')"></div>
-                        <div class="slot-frame" id="slot-accessory" onclick="CharacterHub.clickSlot('accessory')"></div>
-                        <div class="slot-frame" id="slot-ring1" onclick="CharacterHub.clickSlot('ring1')"></div>
-                        <div class="slot-frame" id="slot-ring2" onclick="CharacterHub.clickSlot('ring2')"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SUB-ABA 3: INVENTÁRIO -->
-            <div id="char-sub-inventory" class="char-sub-panel">
-                <div class="inventory-toolbar">
-                    <div class="category-filters" id="inventory-cat-filters">
-                        <button class="cat-filter-btn active" onclick="CharacterHub.filterBag('all', this)">Todos</button>
-                        <button class="cat-filter-btn" onclick="CharacterHub.filterBag('weapon', this)">Armas</button>
-                        <button class="cat-filter-btn" onclick="CharacterHub.filterBag('grimoire', this)">Grimórios</button>
-                        <button class="cat-filter-btn" onclick="CharacterHub.filterBag('armor', this)">Armaduras</button>
-                        <button class="cat-filter-btn" onclick="CharacterHub.filterBag('relic', this)">Relíquias</button>
-                        <button class="cat-filter-btn" onclick="CharacterHub.filterBag('accessory', this)">Acessórios</button>
-                        <button class="cat-filter-btn" onclick="CharacterHub.filterBag('ring', this)">Anéis</button>
-                    </div>
-                </div>
-                <div class="inventory-bag-grid-full" id="inventory-bag-full"></div>
-            </div>
-
-            <!-- SUB-ABA 4: COLEÇÃO & TROFÉUS -->
-            <div id="char-sub-collection" class="char-sub-panel">
-                <div class="collection-header-summary">
-                    <div class="col-metric"><span>Bosses Catalogados</span><strong id="col-boss-ratio">0 / 42</strong></div>
-                    <div class="col-metric"><span>Itens Descobertos</span><strong id="col-item-ratio">0 / 30</strong></div>
-                    <div class="col-metric"><span>Troféus Conquistados</span><strong id="col-trophy-ratio" style="color:var(--gold);">0 / 6</strong></div>
-                </div>
-
-                <div class="collection-sections">
-                    <div class="bestiary-section">
-                        <h3><i class="fa-solid fa-book-skull"></i> BESTIÁRIO DOS GUARDIÕES</h3>
-                        <p class="cal-legend-text">Entradas catalogadas de inimigos enfrentados e suas características.</p>
-                        <div class="bestiary-grid" id="bestiary-grid-collection"></div>
-                    </div>
-
-                    <div class="trophies-section">
-                        <h3><i class="fa-solid fa-award"></i> SALA DE TROFÉUS</h3>
-                        <p class="cal-legend-text">Conquistas permanentes obtidas através da consistência nos estudos.</p>
-                        <div class="trophies-grid" id="trophies-grid-collection"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ABA 3: CALENDÁRIO -->
-    <div id="tab-calendar" class="tab-panel">
-        <div class="calendar-card">
-            <div class="cal-nav">
-                <button class="btn-cal-nav" onclick="CalendarView.prevMonth()">&lt;</button>
-                <h2 id="cal-month-title">Agosto de 2026</h2>
-                <button class="btn-cal-nav" onclick="CalendarView.nextMonth()">&gt;</button>
-            </div>
-            <div class="cal-legend-text">Clique em qualquer data para inspecionar todas as batalhas e matérias estudadas naquele dia.</div>
-            <div class="cal-grid" id="cal-grid"></div>
-        </div>
-    </div>
-
-    <!-- ABA 4: HISTÓRICO -->
-    <div id="tab-history" class="tab-panel">
-        <div class="history-card">
-            <div class="history-controls">
-                <input type="text" id="history-filter-text" placeholder="Filtrar por matéria livre..." oninput="HistoryView.render()">
-                <select id="history-filter-method" onchange="HistoryView.render()">
-                    <option value="all">Todos os métodos</option>
-                    <option value="questions">Questões</option>
-                    <option value="flashcards">Flashcards</option>
-                    <option value="passive_reading">Leitura</option>
-                    <option value="active_combo">Combo Ativo</option>
-                </select>
-            </div>
-            <div class="history-list" id="history-list-container"></div>
-        </div>
-    </div>
-
-    <!-- ABA 5: ESTATÍSTICAS -->
-    <div id="tab-stats" class="tab-panel">
-        <div class="stats-card">
-            <h2><i class="fa-solid fa-chart-line"></i> DIAGNÓSTICO DE EVOLUÇÃO</h2>
-            <div class="stats-grid-full">
-                <div class="stat-box">
-                    <span>Tempo Total Estudado</span>
-                    <strong id="stat-total-time">0h 00m</strong>
-                </div>
-                <div class="stat-box">
-                    <span>Dano Total ao Esquecimento</span>
-                    <strong id="stat-total-dmg" style="color: var(--crimson);">0 HP</strong>
-                </div>
-                <div class="stat-box">
-                    <span>XP Total Acumulado</span>
-                    <strong id="stat-total-xp" style="color: var(--mana);">0</strong>
-                </div>
-                <div class="stat-box">
-                    <span>Total de Batalhas</span>
-                    <strong id="stat-total-sessions">0</strong>
-                </div>
-                <div class="stat-box">
-                    <span>Média Diária</span>
-                    <strong id="stat-daily-avg">0 min</strong>
-                </div>
-                <div class="stat-box">
-                    <span>Bosses Derrotados</span>
-                    <strong id="stat-bosses-killed" style="color: var(--gold);">0</strong>
-                </div>
-            </div>
-            <div class="subject-breakdown-list" id="subject-breakdown-container"></div>
-        </div>
-    </div>
-
-    <!-- ABA 6: AJUSTES -->
-    <div id="tab-config" class="tab-panel">
-        <div class="config-card">
-            <h2><i class="fa-solid fa-gear"></i> CONFIGURAÇÕES</h2>
-            
-            <div class="config-group">
-                <label>Ciclo Base de Vitalidade dos Bosses</label>
-                <select id="config-boss-preset" onchange="SettingsView.changeBossCycle(this.value)">
-                    <option value="5000">Bosses Rápidos (5.000 HP)</option>
-                    <option value="12000" selected>Bosses Padrão (12.000 HP)</option>
-                    <option value="30000">Bosses Pesados (30.000 HP)</option>
-                    <option value="60000">Bosses Titânicos (60.000 HP)</option>
-                </select>
-            </div>
-
-            <!-- BACKUP & RESTAURAÇÃO DE PROGRESSO -->
-            <div class="config-group" style="margin-top: 14px;">
-                <label><i class="fa-solid fa-cloud-arrow-down"></i> Backup & Transferência de Save</label>
-                <div style="display: flex; gap: 8px; margin-top: 6px;">
-                    <button class="btn-secondary" style="flex: 1; padding: 10px;" onclick="Storage.exportSave()">
-                        <i class="fa-solid fa-file-export"></i> Exportar Save (.json)
-                    </button>
-                    
-                    <button class="btn-primary" style="flex: 1; padding: 10px;" onclick="document.getElementById('import-save-input').click()">
-                        <i class="fa-solid fa-file-import"></i> Importar Save
-                    </button>
-                    <input type="file" id="import-save-input" accept=".json" style="display: none;" onchange="Storage.importSave(event)">
-                </div>
-            </div>
-
-            <div class="config-group" style="margin-top: 18px; border-top: 1px solid var(--border-color); padding-top: 14px;">
-                <button class="btn-danger" onclick="Storage.resetAllData()"><i class="fa-solid fa-trash"></i> Resetar Todos os Dados</button>
-            </div>
-        </div>
-    </div>
-</div>
-<script src="js/database.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/combat.js"></script>
-<script src="js/animation.js"></script>
-<script src="js/timer.js"></script>
-<script src="js/fx.js"></script>
-<script src="js/main.js"></script>
-<script src="js/debug.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/fx.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/views/battle.js"></script>
+  <script src="js/views/focus.js"></script>
+  <script src="js/views/results.js"></script>
+  <script src="js/views/hero.js"></script>
+  <script src="js/views/arsenal.js"></script>
+  <script src="js/views/collection.js"></script>
+  <script src="js/views/chronicle.js"></script>
+  <script src="js/views/stats.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/dev.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

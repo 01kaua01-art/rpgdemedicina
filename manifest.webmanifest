@@ -1,0 +1,14 @@
+{
+  "name": "MedRPG · Grimório Clínico",
+  "short_name": "MedRPG",
+  "description": "Transforme suas horas de estudo de medicina em batalhas contra o Esquecimento.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07080d",
+  "theme_color": "#07080d",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
